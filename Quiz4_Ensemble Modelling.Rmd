@@ -1,0 +1,99 @@
+---
+title: 'Quiz 4: Solutions'
+author: "Paul Vinod"
+date: "02/02/2021"
+output: html_document
+---
+
+Q1: Set the variable y to be a factor variable in both the training and test set. Then set the seed to 33833. Fit (1) a random forest predictor relating the factor variable y to the remaining variables and (2) a boosted predictor using the "gbm" method. Fit these both with the train() command in the caret package. 
+
+What are the accuracies for the two approaches on the test data set? What is the accuracy among the test set samples where the two methods agree? 
+
+```{r}
+library(ElemStatLearn)
+data(vowel.train)
+data(vowel.test)
+
+# Extra code
+library(caret)
+set.seed(33833)
+vowel.test$y <- as.factor(vowel.test$y)
+vowel.train$y <- as.factor(vowel.train$y)
+
+model1 <- train(y ~ .,
+                data = vowel.train,
+                method = "rf")
+rf_pred <- predict(object = model1, newdata = vowel.test)
+rf_acc <- confusionMatrix(rf_pred, vowel.test$y)$overall[1]
+
+model2 <- train(y~., 
+                data = vowel.train, 
+                method = "gbm")
+gbm_pred <- predict(object = model2, newdata = vowel.test)
+gbm_acc <- confusionMatrix(gbm_pred, vowel.test$y)$overall[1]
+agree_acc<- sum(rf_pred == gbm_pred & rf_pred == vowel.test$y & gbm_pred == vowel.test$y)/sum(rf_pred == gbm_pred)
+res <- data.frame(rf_acc,gbm_acc,agree_acc)
+res
+```
+
+Q2: Set the seed to 62433 and predict diagnosis with all the other variables using a random forest ("rf"), boosted trees ("gbm") and linear discriminant analysis ("lda") model. Stack the predictions together using random forests ("rf"). What is the resulting accuracy on the test set? Is it better or worse than each of the individual predictions?
+```{r}
+library(caret)
+library(gbm)
+set.seed(3433)
+library(AppliedPredictiveModeling)
+data(AlzheimerDisease)
+adData = data.frame(diagnosis,predictors)
+inTrain = createDataPartition(adData$diagnosis, p = 3/4)[[1]]
+training = adData[ inTrain,]
+testing = adData[-inTrain,]
+
+# Extra Code 
+set.seed(62433)
+rf_model <- train(diagnosis ~. , 
+                  data = training,
+                  method = "rf")
+rf_pred2 <- predict(object = rf_model, newdata = testing)
+
+gbm_model <- train(diagnosis ~., 
+                   data = training, 
+                   method = "gbm")
+gbm_pred2 <- predict(object = gbm_model, newdata = testing)
+
+lda_model <- train(diagnosis ~., 
+                   data = training, 
+                   method = "lda")
+lda_pred2 <- predict(object = lda_model, newdata = testing)
+
+pred_stack <- data.frame(rf_pred2, gbm_pred2, lda_pred2, diagnosis = testing$diagnosis)
+stack_model <- train(diagnosis ~., 
+                     data = pred_stack, 
+                     method = "rf")
+stack_pred2 <- predict(object = stack_model, newdata = testing)
+res <- data.frame(confusionMatrix(rf_pred2, testing$diagnosis)$overall[1],
+                  confusionMatrix(gbm_pred2, testing$diagnosis)$overall[1],
+                  confusionMatrix(lda_pred2, testing$diagnosis)$overall[1],
+                  confusionMatrix(stack_pred2, testing$diagnosis)$overall[1])
+res
+```
+
+Q3: 
+Set the seed to 233 and fit a lasso model to predict Compressive Strength. Which variable is the last coefficient to be set to zero as the penalty increases? (Hint: it may be useful to look up ?plot.enet). 
+
+```{r}
+set.seed(3523)
+library(AppliedPredictiveModeling)
+data(concrete)
+inTrain = createDataPartition(concrete$CompressiveStrength, p = 3/4)[[1]]
+training = concrete[ inTrain,]
+
+# Extra Code setting the Lasso model. 
+set.seed(233)
+lasso_model <- train(CompressiveStrength ~., 
+                     data = training, 
+                     method = "lasso")
+library(elasticnet)
+plot.enet(lasso_model$finalmodel, xvar = "penalty", use.color = TRUE)
+
+
+```
