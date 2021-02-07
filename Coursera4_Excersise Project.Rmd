@@ -1,14 +1,14 @@
 ---
-title: 'Course 4: Project'
+title: 'Course 4: Project: Excerise Machine Learning'
 author: "Paul Vinod"
-date: "04/02/2021"
+date: "06/02/2021"
 output: html_document
 ---
 
-**INTRODUCTION**
+#### **INTRODUCTION**
 This is coursera Pratical machine learning project. Here, we would focus on various different factors for weighing different excersies. The goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. We are provided with both training and testing data. 
 
-**PROJECT INITIALIZATION**
+#### **PROJECT INITIALIZATION**
 The project required header files has to be added. 
 ```{r}
 library(ggplot2)
@@ -21,7 +21,7 @@ library(dplyr)
 library(gbm)
 ```
 
-**DATA COLLECTION**
+####**DATA COLLECTION**
 The following steps is to retrieve the data from relevant souces into R database for further calculations. The data provided included training and testing data. 
 
 ```{r}
@@ -33,7 +33,7 @@ dim(train_input)
 dim(test_input)
 ```
 
-**CLEANSING DATA**
+#### **CLEANSING DATA**
 Here we need to tidy the data captured and remove missing columns which are completely filled with missing values.  
 ```{r}
 train_data <- train_input[, colSums(is.na(train_input)) == 0] # to remove col with NAs
@@ -43,8 +43,8 @@ dim(test_data)
 train_set <- train_data[,-c(1:7)]
 valid_set <- test_data[,-c(1:7)]
 ```
-
-**PREDICTION ANALYSIS**
+ 
+#### **PREDICTION ANALYSIS**
 For prediction we need to split the train_data into training set and testing data. For that we would use the R package caret to create partition. 
 
 ```{r}
@@ -62,7 +62,7 @@ trainData <- trainData[,-cols]
 testData <- testData[,-cols]
 ```
 
-**Method 1: Random Forest**
+##### **Method 1: Random Forest**
 
 Here we would apply **Random Forest** method to create the prediction. 
 
@@ -80,7 +80,7 @@ rf_pred <- predict(object = rf_mdl, newdata = testData)
 rf_cm <- confusionMatrix(rf_pred, as.factor(testData$classe))
 rf_cm
 ```
-**Method 2: GBM**
+##### **Method 2: GBM**
 Here we would apply **GBM** method to create the prediction. 
 
 ```{r cache = TRUE, results= 'hide'}
@@ -103,7 +103,7 @@ gbm_cm
 ```
 
 
-**Method 3: Decision Tree**
+##### **Method 3: Decision Tree**
 Here we would apply **Decision Tree** method to create the prediction. 
 
 ```{r cache= TRUE}
@@ -124,25 +124,34 @@ The overall performance of each prediction model can be depicted as follows:
 acc_cm <- data.frame(rf_cm$overall[1], gbm_cm$overall[1], dt_cm$overall[1])
 ```
 
-**RUNNING WITH TEST DATA**
+#### **RUNNING WITH TEST DATA**
 On mapping the each different model to the required **valid data** set and calculating the accuracy. 
 
 ```{r}
 rf_pred_valid <- predict(rf_mdl, newdata = valid_set)
-rf_cm_op <- confusionMatrix(rf_pred_valid, as.factor(valid_set$classe))
 
 gbm_pred_valid <- predict(gbm_mdl, newdata = valid_set)
-gbm_cm_op <- confusionMatrix(gbm_pred_valid, as.factor(valid_set$classe))
 
-acc_valid_op <- data.frame(rf_cm_op$overall[1], gbm_cm_op$overall[1])
+dt_pred_valid <- predict(dt_mdl, newdata = valid_set, type = "class")
+
+pred_output <- data.frame(rf_pred_valid, 
+                          gbm_pred_valid,
+                          dt_pred_valid)
+headings <- c( "RandomForest", "Gbm", "DecisionTree")
+names(pred_output) <- headings
 ```
 
-**CONCLUSION**
+#### **CONCLUSION**
 From the above analysis we can see the resubstitution error and generalization error that occurs in each of the 2 scenarios using the test_data and valid_data. 
 
 ```{r}
 acc_cm
-acc_valid_op
 ```
+We found that **random forest** had the highest in-sample accuracy of `r acc_cm[1,1]`
 
-We found that **random forest** had the highest in sample accuracy of `{r} acc_cm[1,1]`
+The predicted output for the validation set is as below:
+```{r}
+pred_output
+```
+Thus, we found the predicted output and most effective was the random forest method having a higher level of accuracy compared to genralized boosting method. 
+
