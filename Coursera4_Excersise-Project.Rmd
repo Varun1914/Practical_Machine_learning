@@ -1,0 +1,148 @@
+---
+title: 'Course 4: Project'
+author: "Paul Vinod"
+date: "04/02/2021"
+output: html_document
+---
+
+**INTRODUCTION**
+This is coursera Pratical machine learning project. Here, we would focus on various different factors for weighing different excersies. The goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. We are provided with both training and testing data. 
+
+**PROJECT INITIALIZATION**
+The project required header files has to be added. 
+```{r}
+library(ggplot2)
+library(GGally)
+library(caret)
+library(rpart)
+library(rattle)
+library(randomForest)
+library(dplyr)
+library(gbm)
+```
+
+**DATA COLLECTION**
+The following steps is to retrieve the data from relevant souces into R database for further calculations. The data provided included training and testing data. 
+
+```{r}
+train_input <-read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv",
+                    header = TRUE)
+test_input <-read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv",
+                   header = TRUE)
+dim(train_input)
+dim(test_input)
+```
+
+**CLEANSING DATA**
+Here we need to tidy the data captured and remove missing columns which are completely filled with missing values.  
+```{r}
+train_data <- train_input[, colSums(is.na(train_input)) == 0] # to remove col with NAs
+test_data <- test_input[, colSums(is.na(test_input)) == 0]
+dim(train_data)
+dim(test_data)
+train_set <- train_data[,-c(1:7)]
+valid_set <- test_data[,-c(1:7)]
+```
+
+**PREDICTION ANALYSIS**
+For prediction we need to split the train_data into training set and testing data. For that we would use the R package caret to create partition. 
+
+```{r}
+set.seed(1590)
+intrain <- createDataPartition(y = train_set$classe,
+                               p = 0.8, 
+                               list = FALSE)
+trainData <- train_set[intrain,]
+testData <- train_set[-intrain,]
+dim(trainData)
+dim(testData)
+# To remove variables which are non-necessary 
+cols <- nearZeroVar(x = trainData)
+trainData <- trainData[,-cols]
+testData <- testData[,-cols]
+```
+
+**Method 1: Random Forest**
+
+Here we would apply **Random Forest** method to create the prediction. 
+
+```{r cache= TRUE}
+rf_mdl <- train(classe ~ ., 
+                       data = trainData,
+                       method = "rf")
+rf_mdl$finalModel
+```
+
+
+To further check the status of the model. 
+```{r }
+rf_pred <- predict(object = rf_mdl, newdata = testData)
+rf_cm <- confusionMatrix(rf_pred, as.factor(testData$classe))
+rf_cm
+```
+**Method 2: GBM**
+Here we would apply **GBM** method to create the prediction. 
+
+```{r cache = TRUE, results= 'hide'}
+set.seed(1111)
+gbm_trctrl <- trainControl(method = "repeatedcv",
+                           repeats = 1, 
+                           number = 3)
+gbm_mdl <- train(classe ~ .,
+                       data = trainData,
+                       method = "gbm", 
+                       trControl = gbm_trctrl)
+gbm_mdl$finalModel
+```
+
+To further check the status of the model. 
+```{r}
+gbm_pred <- predict(object = gbm_mdl, newdata = testData)
+gbm_cm <- confusionMatrix(gbm_pred, as.factor(testData$classe))
+gbm_cm
+```
+
+
+**Method 3: Decision Tree**
+Here we would apply **Decision Tree** method to create the prediction. 
+
+```{r cache= TRUE}
+set.seed(3333)
+dt_mdl <- rpart(classe ~., data = trainData, method = "class")
+fancyRpartPlot(dt_mdl)
+```
+
+To further the model performance
+```{r }
+dt_pred <- predict(dt_mdl, newdata = testData, type = "class")
+dt_cm <- confusionMatrix(dt_pred, as.factor(testData$classe))
+dt_cm
+```
+
+The overall performance of each prediction model can be depicted as follows: 
+```{r}
+acc_cm <- data.frame(rf_cm$overall[1], gbm_cm$overall[1], dt_cm$overall[1])
+```
+
+**RUNNING WITH TEST DATA**
+On mapping the each different model to the required **valid data** set and calculating the accuracy. 
+
+```{r}
+rf_pred_valid <- predict(rf_mdl, newdata = valid_set)
+rf_cm_op <- confusionMatrix(rf_pred_valid, as.factor(valid_set$classe))
+
+gbm_pred_valid <- predict(gbm_mdl, newdata = valid_set)
+gbm_cm_op <- confusionMatrix(gbm_pred_valid, as.factor(valid_set$classe))
+
+acc_valid_op <- data.frame(rf_cm_op$overall[1], gbm_cm_op$overall[1])
+```
+
+**CONCLUSION**
+From the above analysis we can see the resubstitution error and generalization error that occurs in each of the 2 scenarios using the test_data and valid_data. 
+
+```{r}
+acc_cm
+acc_valid_op
+```
+
+We found that **random forest** had the highest in sample accuracy of `{r} acc_cm[1,1]`
