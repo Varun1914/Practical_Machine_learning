@@ -79,11 +79,9 @@ dt_cm
 acc_cm <- data.frame(rf_cm$overall[1], gbm_cm$overall[1], dt_cm$overall[1])
 
 ## Validation of the training data set. 
-valid_set <- valid_set[,-cols]
 rf_pred_valid <- predict(rf_mdl, newdata = valid_set)
-rf_cm_op <- confusionMatrix(rf_pred_valid, as.factor(valid_set$classe))
 
 gbm_pred_valid <- predict(gbm_mdl, newdata = valid_set)
-gbm_cm_op <- confusionMatrix(gbm_pred_valid, as.factor(valid_set$classe))
 
-acc_valid_op <- data.frame(rf_cm_op$overall[1], gbm_cm_op$overall[1])
+
+res <- data.frame(1:dim(valid_set)[1], rf_pred_valid, gbm_pred_valid)
